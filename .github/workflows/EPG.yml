@@ -29,7 +29,7 @@ jobs:
     - name: Download and Merge EPG XMLs
       run: |
         EPG_LINKS=(
-          "https://epgshare01.online/epgshare01/epg_ripper_ALL_SOURCES1.xml.gz"
+          "https://epg.pw/xmltv/epg.xml.gz"  # 国际版（全球频道）
         )
 
         echo "📥 正在下载并合并 EPG 文件..."
