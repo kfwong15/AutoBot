@@ -29,9 +29,8 @@ jobs:
     - name: Download and Merge EPG XMLs
       run: |
         EPG_LINKS=(
-  "https://epgshare01.online/epgshare01/epg_ripper_ALL_SOURCES1.xml.gz"
-
-)
+          "https://epgshare01.online/epgshare01/epg_ripper_ALL_SOURCES1.xml.gz"
+        )
 
         echo "📥 正在下载并合并 EPG 文件..."
 
@@ -40,19 +39,25 @@ jobs:
         echo '<tv>' >> epg.xml
 
         for URL in "${EPG_LINKS[@]}"; do
-          echo "🔗 尝试下载：$URL"
-          curl -s --fail --max-time 20 "${URL}?t=$(date +%s)" -o temp_epg.xml || true
+          echo "🔗 下载：$URL"
+          curl -s --fail --max-time 30 "$URL" -o temp_epg.xml.gz || continue
 
-          if grep -q "<channel" temp_epg.xml; then
-            echo "✅ 成功并有内容：$URL"
-            sed '/<\?xml/d;/<tv>/d;/<\/tv>/d' temp_epg.xml >> epg.xml
+          if [ -s temp_epg.xml.gz ]; then
+            gunzip -c temp_epg.xml.gz > temp_epg.xml || continue
+
+            if grep -q "<channel" temp_epg.xml; then
+              echo "✅ 成功并有内容：$URL"
+              sed '/<\?xml/d;/<tv>/d;/<\/tv>/d' temp_epg.xml >> epg.xml
+            else
+              echo "⚠️ EPG 内容为空：$URL"
+            fi
           else
-            echo "⚠️ 跳过无效或空文件：$URL"
+            echo "⚠️ 下载失败或文件为空：$URL"
           fi
         done
 
         echo '</tv>' >> epg.xml
-        rm -f temp_epg.xml
+        rm -f temp_epg.xml temp_epg.xml.gz
 
         SIZE=$(du -h epg.xml | cut -f1)
         echo "EPG_SIZE=${SIZE}" >> $GITHUB_ENV
