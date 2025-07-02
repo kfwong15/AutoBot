@@ -2,8 +2,8 @@ name: AutoFetchAndMergeEPG
 
 on:
   schedule:
-    - cron: '*/6 * * * *'
-  workflow_dispatch:
+    - cron: '*/6 * * * *'            # 每6分钟运行一次
+  workflow_dispatch:                 # 手动运行
   push:
     paths:
       - '.github/workflows/**'
@@ -29,7 +29,7 @@ jobs:
     - name: Download and Merge EPG XMLs
       run: |
         EPG_LINKS=(
-          "https://iptv-org.github.io/epg/guides/zh.xml"   # 中国/港台（目前可能失效）
+          "https://iptv-org.github.io/epg/guides/zh.xml"   # 中国/港台（可删除）
           "https://iptv-org.github.io/epg/guides/my.xml"   # 马来西亚
           "https://iptv-org.github.io/epg/guides/jp.xml"   # 日本
           "https://iptv-org.github.io/epg/guides/kr.xml"   # 韩国
@@ -42,15 +42,15 @@ jobs:
         echo '<tv>' >> epg.xml
 
         for URL in "${EPG_LINKS[@]}"; do
-          echo "🔗 下载中：$URL"
-          wget -q --timeout=15 --tries=2 "${URL}?t=$(date +%s)" -O temp_epg.xml
+          echo "🔗 尝试下载：$URL"
+          curl -s --fail --max-time 15 "${URL}?t=$(date +%s)" -o temp_epg.xml
 
-          if [ $? -eq 0 ] && [ -s temp_epg.xml ]; then
+          if [ -s temp_epg.xml ]; then
+            echo "✅ 成功：$URL"
             sed -n '/<channel /,/<\/channel>/p' temp_epg.xml >> epg.xml
             sed -n '/<programme /,/<\/programme>/p' temp_epg.xml >> epg.xml
-            echo "✅ 成功合并：$URL"
           else
-            echo "⚠️ 跳过无效链接：$URL"
+            echo "⚠️ 跳过无效或空文件：$URL"
           fi
         done
 
@@ -59,7 +59,7 @@ jobs:
 
         SIZE=$(du -h epg.xml | cut -f1)
         echo "EPG_SIZE=${SIZE}" >> $GITHUB_ENV
-        echo "✅ 合并完成，EPG 总大小：$SIZE"
+        echo "✅ 合并完成，EPG 文件大小：$SIZE"
 
     - name: Update README
       run: |
