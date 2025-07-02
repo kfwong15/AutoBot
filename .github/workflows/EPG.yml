@@ -2,8 +2,8 @@ name: AutoFetchAndMergeEPG
 
 on:
   schedule:
-    - cron: '*/6 * * * *'            # 每6分钟运行
-  workflow_dispatch:                 # 可手动触发
+    - cron: '*/6 * * * *'
+  workflow_dispatch:
   push:
     paths:
       - '.github/workflows/**'
@@ -33,7 +33,6 @@ jobs:
           "https://iptv-org.github.io/epg/guides/jp.xml"   # ✅ 日本
           "https://iptv-org.github.io/epg/guides/kr.xml"   # ✅ 韩国
           "https://iptv-org.github.io/epg/guides/sg.xml"   # ✅ 新加坡
-          
         )
 
         echo "📥 正在下载并合并 EPG 文件..."
@@ -69,7 +68,7 @@ jobs:
         echo "- 更新时间（MYT）：${GET_TIME}" >> README.md
         echo "- 合并文件大小：${EPG_SIZE}" >> README.md
 
-    - name: Commit and Push
+    - name: Commit and Push (force)
       run: |
         git config --global user.name "kfwong15"
         git config --global user.email "kfwong15@users.noreply.github.com"
@@ -79,8 +78,5 @@ jobs:
 
         git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
-        # ✅ 拉取远程变更避免冲突
-        git pull --rebase
-
-        # ✅ 推送到 GitHub
-        git push
+        # ✅ 强制推送，避免锁冲突
+        git push --force
