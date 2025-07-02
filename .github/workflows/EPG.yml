@@ -1,20 +1,15 @@
-name: AutoEPG
+name: AutoFetchEPG
 
 on:
   schedule:
     - cron: '*/6 * * * *'           # ⏰ 每6分钟自动运行（UTC时间）
-  push:                              # 📝 有更改时自动触发
-    paths:
-      - '*.m3u'
-      - 'README.md'
-      - '.github/workflows/**'
-  workflow_dispatch:                 # 🖐️ 允许手动启动
+  workflow_dispatch:                 # 🖐️ 允许手动触发
 
 env:
   TZ: Asia/Kuala_Lumpur              # 设置为马来西亚时间
 
 jobs:
-  fetch_merge:
+  fetch_epg:
     runs-on: ubuntu-latest
 
     steps:
@@ -27,44 +22,29 @@ jobs:
     - name: Get current time (MYT)
       run: echo "GET_TIME=$(date +'%Y-%m-%d %H:%M:%S MYT')" >> $GITHUB_ENV
 
-    - name: Download and Merge M3U Files (always rebuild)
+    - name: Download EPG XML
       run: |
-        LINKS=(
-          "https://raw.githubusercontent.com/kfwong15/ABC/main/owntv"
-        )
+        EPG_URL="https://iptv-org.github.io/epg/guides/zh.xml"   # ⛳ 请将此处改成你的EPG源URL
 
-        echo "#EXTM3U" > ALL_IPTV.m3u
+        echo "📥 正在下载 EPG：$EPG_URL"
+        wget -q "${EPG_URL}?t=$(date +%s)" -O epg.xml
 
-        for URL in "${LINKS[@]}"; do
-          FILE_NAME=$(echo "$URL" | sed 's|https://raw.githubusercontent.com/||' | sed 's|/|_|g').m3u
-          echo "📥 正在下载：$URL"
-          wget -q "${URL}?t=$(date +%s)" -O "$FILE_NAME"
+        if [ -s epg.xml ]; then
+          echo "✅ 成功下载 epg.xml"
+        else
+          echo "❌ EPG 下载失败或文件为空"
+          exit 1
+        fi
 
-          if [ -s "$FILE_NAME" ]; then
-            grep -q "^#EXTM3U" "$FILE_NAME" || sed -i '1i #EXTM3U' "$FILE_NAME"
-            tail -n +2 "$FILE_NAME" >> ALL_IPTV.m3u
-          else
-            echo "❌ 文件为空或下载失败：$FILE_NAME"
-          fi
-        done
+        echo "EPG 最后更新时间：${GET_TIME}" > README.md
 
-        VALID_CHANNELS=$(grep -c '^#EXTINF' ALL_IPTV.m3u)
-        echo "频道总数：$VALID_CHANNELS"
-
-        # 强制制造变化：添加当前时间
-        echo "# 更新时间 ${GET_TIME}" >> ALL_IPTV.m3u
-
-        echo "Auto update at ${GET_TIME}" > README.md
-        echo "频道总数：$VALID_CHANNELS" >> README.md
-
-    - name: Force Commit and Push Every Run
+    - name: Commit and Push
       run: |
         git config --global user.name "kfwong15"
         git config --global user.email "kfwong15@users.noreply.github.com"
-
         git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
+        git add epg.xml README.md
+        git commit -m "🕒 EPG 更新于 ${GET_TIME}" --allow-empty
         git pull --rebase
-        git add -A
-        git commit -m "🔄 Forced update at ${GET_TIME}" --allow-empty
         git push
