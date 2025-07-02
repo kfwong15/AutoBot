@@ -40,7 +40,7 @@ jobs:
 
         for URL in "${EPG_LINKS[@]}"; do
           echo "🔗 下载：$URL"
-          curl -s --fail --max-time 30 "$URL" -o temp_epg.xml.gz || continue
+          curl -s --fail --max-time 60 "$URL" -o temp_epg.xml.gz || continue
 
           if [ -s temp_epg.xml.gz ]; then
             gunzip -c temp_epg.xml.gz > temp_epg.xml || continue
@@ -70,14 +70,11 @@ jobs:
         echo "- 更新时间（MYT）：${GET_TIME}" >> README.md
         echo "- 合并文件大小：${EPG_SIZE}" >> README.md
 
-    - name: Commit and Push (force)
-      run: |
-        git config --global user.name "kfwong15"
-        git config --global user.email "kfwong15@users.noreply.github.com"
-
-        git add -A
-        git commit -m "📡 合并 EPG 更新于 ${GET_TIME}" --allow-empty
-
-        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-
-        git push --force
+    - name: Upload EPG to GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: epg-release
+        name: EPG XML Release
+        files: epg.xml
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
