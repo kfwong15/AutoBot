@@ -29,10 +29,9 @@ jobs:
     - name: Download and Merge EPG XMLs
       run: |
         EPG_LINKS=(
-          "https://epg.best/guide.xml"
-          "https://iptv-org.github.io/epg/guides/us.xml"
-          "https://iptv-org.github.io/epg/guides/gb.xml"
-        )
+  "https://epgshare01.online/epgshare01/epg_ripper_ALL_SOURCES1.xml.gz"
+
+)
 
         echo "📥 正在下载并合并 EPG 文件..."
 
