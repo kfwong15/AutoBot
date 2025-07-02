@@ -29,9 +29,9 @@ jobs:
     - name: Download and Merge EPG XMLs
       run: |
         EPG_LINKS=(
-          "https://epg.best/guide.xml"                            # 综合全球频道（需测试）
-          "https://iptv-org.github.io/epg/guides/us.xml"          # 美国
-          "https://iptv-org.github.io/epg/guides/gb.xml"          # 英国
+          "https://epg.best/guide.xml"
+          "https://iptv-org.github.io/epg/guides/us.xml"
+          "https://iptv-org.github.io/epg/guides/gb.xml"
         )
 
         echo "📥 正在下载并合并 EPG 文件..."
@@ -44,10 +44,9 @@ jobs:
           echo "🔗 尝试下载：$URL"
           curl -s --fail --max-time 20 "${URL}?t=$(date +%s)" -o temp_epg.xml || true
 
-          if [ -s temp_epg.xml ]; then
-            echo "✅ 成功：$URL"
-            sed -n '/<channel /,/<\/channel>/p' temp_epg.xml >> epg.xml
-            sed -n '/<programme /,/<\/programme>/p' temp_epg.xml >> epg.xml
+          if grep -q "<channel" temp_epg.xml; then
+            echo "✅ 成功并有内容：$URL"
+            sed '/<\?xml/d;/<tv>/d;/<\/tv>/d' temp_epg.xml >> epg.xml
           else
             echo "⚠️ 跳过无效或空文件：$URL"
           fi
